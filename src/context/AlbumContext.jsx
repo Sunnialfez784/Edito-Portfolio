@@ -3,27 +3,13 @@ import {BASE_URL} from "../apis";
 
 const AlbumContext = createContext(null);
 
-// Legacy key from the old localStorage-only implementation. Kept only so any
-// data saved before this fix can be migrated into the new store instead of
-// being lost.
 const LEGACY_STORAGE_KEY = "rehann_portfolio_albums_v1";
 
-// Albums (and every video/cover inside them) can contain large base64 video
-// data URLs from uploads. localStorage has a hard ~5-10MB per-origin quota,
-// which real video uploads blow past almost immediately — the previous
-// implementation wrote to localStorage and silently swallowed the resulting
-// QuotaExceededError, so uploads looked like they worked in the Admin tab
-// but were never actually persisted, and disappeared from the Public
-// Portfolio on refresh or in any other tab/session. IndexedDB has a much
-// larger quota and is the right place to store this data.
 const DB_NAME = "rehann_portfolio_db";
 const DB_VERSION = 1;
 const STORE_NAME = "kv";
 const RECORD_KEY = "albums";
 
-// Broadcasts changes to any other open tab/window of this site (e.g. Admin
-// open in one tab, Public Portfolio open in another) so both stay in sync
-// immediately, without requiring a manual refresh.
 const CHANNEL_NAME = "rehann_portfolio_albums_sync";
 
 function normalizeVideo(video) {
@@ -44,7 +30,6 @@ function normalizeVideo(video) {
 function normalizeAlbum(album) {
   if (!album) return album;
 
-  // Backend flat "videoUrl" field ko coverVideo object mein map karo
   const rawCoverVideo =
     album.coverVideo ||
     (album.videoUrl
@@ -106,10 +91,6 @@ async function idbSet(key, value) {
   });
 }
 
-// Best-effort fallback for the rare environment without IndexedDB (e.g. some
-// locked-down private browsing modes). Same quota caveats as before apply
-// there, but every modern browser used for real admin/public testing
-// supports IndexedDB, so this path is a safety net rather than the norm.
 async function fallbackGet(key) {
   const raw = localStorage.getItem(`${DB_NAME}:${key}`);
   return raw ? JSON.parse(raw) : undefined;
@@ -142,8 +123,6 @@ async function loadAlbums() {
     console.warn("Failed to read albums from storage", e);
   }
 
-  // One-time migration: bring across anything saved by the old
-  // localStorage-only implementation before it's overwritten.
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (raw) {
@@ -164,7 +143,6 @@ export function AlbumProvider({children}) {
   const channelRef = useRef(null);
   const isRemoteUpdate = useRef(false);
 
-  // Initial load from the shared store.
   useEffect(() => {
     const getAlbums = async () => {
       try {
@@ -184,8 +162,6 @@ export function AlbumProvider({children}) {
     getAlbums();
   }, []);
 
-  // Cross-tab live sync: when Admin (in one tab) changes data, any other
-  // tab showing the Public Portfolio re-reads the shared store immediately.
   useEffect(() => {
     if (typeof BroadcastChannel === "undefined") return;
     const channel = new BroadcastChannel(CHANNEL_NAME);
@@ -201,7 +177,6 @@ export function AlbumProvider({children}) {
     return () => channel.close();
   }, []);
 
-  // Persist every change to the shared store, and let other tabs know.
   useEffect(() => {
     if (!ready) return;
     storeSet(RECORD_KEY, albums)
