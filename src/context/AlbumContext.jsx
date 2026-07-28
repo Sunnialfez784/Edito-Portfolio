@@ -1,5 +1,4 @@
 import React, {createContext, useContext, useEffect, useState, useCallback, useRef} from "react";
-import {BASE_URL} from "../apis";
 
 const AlbumContext = createContext(null);
 
@@ -45,7 +44,7 @@ function normalizeAlbum(album) {
 
   return {
     ...album,
-    name: album.title || "Untitled Album",
+    name: album.name || album.title || "Untitled Album",
     description: album.description || "",
     date: album.createdAt || "",
     coverVideo: rawCoverVideo ? normalizeVideo(rawCoverVideo) : coverPoster ? {src: "", poster: coverPoster, name: album.name, type: "image"} : null,
@@ -144,22 +143,10 @@ export function AlbumProvider({children}) {
   const isRemoteUpdate = useRef(false);
 
   useEffect(() => {
-    const getAlbums = async () => {
-      try {
-        const response = await fetch(`${BASE_URL}/all-video`);
-        const data = await response.json();
-
-        if (response.ok) {
-          const normalized = Array.isArray(data.data) ? data.data.map(normalizeAlbum) : [];
-          setAlbums(normalized);
-        }
-      } catch (error) {
-        console.log(error);
-      } finally {
-        setReady(true);
-      }
-    };
-    getAlbums();
+    loadAlbums()
+      .then((stored) => setAlbums(stored))
+      .catch((error) => console.warn("Failed to load albums", error))
+      .finally(() => setReady(true));
   }, []);
 
   useEffect(() => {
@@ -189,116 +176,36 @@ export function AlbumProvider({children}) {
       .catch((e) => console.warn("Failed to persist albums", e));
   }, [albums, ready]);
 
-  const createAlbum = async (album) => {
-    try {
-      const formData = new FormData();
-      formData.append("name", album.name || "");
-      formData.append("title", album.name || "");
-      formData.append("description", album.description || "");
-      formData.append("type", album.type || "");
+  const createAlbum = useCallback((album) => {
+    const newAlbum = normalizeAlbum({
+      id: crypto.randomUUID(),
+      name: album.name || "Untitled Album",
+      description: album.description || "",
+      createdAt: new Date().toISOString().slice(0, 10),
+      coverVideo: album.coverVideo || null,
+      videos: [],
+    });
+    setAlbums((prev) => [newAlbum, ...prev]);
+  }, []);
 
-      if (album.coverVideo?.file) {
-        formData.append("videoFile", album.coverVideo.file);
-      }
-      if (album.coverVideo?.poster) {
-        formData.append("posterImage", album.coverVideo.poster);
-      }
+  const updateAlbum = useCallback((id, patch) => {
+    setAlbums((prev) =>
+      prev.map((a) =>
+        a.id === id
+          ? normalizeAlbum({
+              ...a,
+              name: patch.name ?? a.name,
+              description: patch.description ?? a.description,
+              coverVideo: patch.coverVideo || a.coverVideo,
+            })
+          : a,
+      ),
+    );
+  }, []);
 
-      if (Array.isArray(album.videos)) {
-        album.videos.forEach((video) => {
-          if (video.file) {
-            formData.append("videoFile", video.file);
-          }
-          if (video.poster) {
-            formData.append("posterImage", video.poster);
-          }
-        });
-      }
-
-      const response = await fetch(`${BASE_URL}/add-video`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log("Create album failed:", data.message || data);
-        alert(data.message || "Album create nahi ho paya. Console check karein.");
-        return;
-      }
-
-      setAlbums((prev) => [normalizeAlbum(data.data), ...prev]);
-    } catch (error) {
-      console.log(error);
-      alert("Album create karte waqt error aayi. Backend chal raha hai ya nahi check karein.");
-    }
-  };
-
-  const updateAlbum = async (id, patch) => {
-    try {
-      const hasNewFile = !!patch.coverVideo?.file;
-      let response;
-
-      if (hasNewFile) {
-        const formData = new FormData();
-        formData.append("name", patch.name || "");
-        formData.append("title", patch.name || "");
-        formData.append("description", patch.description || "");
-        formData.append("videoFile", patch.coverVideo.file);
-        if (patch.coverVideo.poster) {
-          formData.append("posterImage", patch.coverVideo.poster);
-        }
-        response = await fetch(`${BASE_URL}/edit-video/${id}`, {
-          method: "PUT",
-          body: formData,
-        });
-      } else {
-        response = await fetch(`${BASE_URL}/edit-video/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: patch.name,
-            title: patch.name,
-            description: patch.description,
-          }),
-        });
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log("Update album failed:", data.message || data);
-        alert(data.message || "Album update nahi ho paya. Console check karein.");
-        return;
-      }
-
-      setAlbums((prev) => prev.map((a) => (a.id === id ? normalizeAlbum(data.data) : a)));
-    } catch (error) {
-      console.log(error);
-      alert("Album update karte waqt error aayi.");
-    }
-  };
-
-  const deleteAlbum = async (id) => {
-    try {
-      const response = await fetch(`${BASE_URL}/delete-video/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setAlbums((prev) => prev.filter((a) => a.id !== id));
-      } else {
-        const data = await response.json().catch(() => ({}));
-        alert(data.message || "Album delete nahi ho paya.");
-      }
-    } catch (error) {
-      console.log(error);
-      alert("Album delete karte waqt error aayi.");
-    }
-  };
+  const deleteAlbum = useCallback((id) => {
+    setAlbums((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   const addVideo = useCallback((albumId, video) => {
     setAlbums((prev) =>

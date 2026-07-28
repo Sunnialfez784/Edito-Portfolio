@@ -142,9 +142,12 @@ export default function Albums() {
       {preview && (
         <div className="fixed inset-0 z-[97] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm" onClick={() => setPreview(null)}>
           <motion.div initial={{opacity: 0, scale: 0.94}} animate={{opacity: 1, scale: 1}} onClick={(e) => e.stopPropagation()} className="w-full max-w-3xl">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="font-display">{preview.name}</h4>
-              <button onClick={() => setPreview(null)} className="text-mist-400 hover:text-white">
+            <div className="flex justify-between items-start gap-4 mb-3">
+              <div>
+                <h4 className="font-display text-lg">{preview.name}</h4>
+                {preview.description && <p className="text-sm text-mist-400 mt-1 max-w-xl">{preview.description}</p>}
+              </div>
+              <button onClick={() => setPreview(null)} className="text-mist-400 hover:text-white shrink-0">
                 <FiX size={22} />
               </button>
             </div>
