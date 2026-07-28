@@ -3,33 +3,28 @@ import {motion, AnimatePresence} from "framer-motion";
 import {FiX} from "react-icons/fi";
 import {prepareVideoAsset, VIDEO_ACCEPT} from "../utils/videoMedia.js";
 
-const EMPTY = {title: "", description: "", category: "YouTube", video: null};
-const CATEGORIES = ["YouTube", "Reels", "Commercial", "Corporate", "Wedding", "Podcast", "AI Generated"];
+const EMPTY = {title: "", description: "", file: null, poster: "", fileName: ""};
 
 export default function VideoFormModal({open, onClose, onSubmit, initial}) {
   const [form, setForm] = useState(EMPTY);
-  const [loading, setLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setForm(
       initial
         ? {
-            title: initial.title,
-            description: initial.description,
-            category: initial.category,
-            video: initial.src
-              ? {
-                  src: initial.src,
-                  poster: initial.poster || initial.thumbnail || "",
-                  name: initial.fileName || initial.title,
-                  type: initial.type || "",
-                }
-              : null,
+            title: initial.title || "",
+            description: initial.description || "",
+            file: null,
+            poster: "",
+            fileName: "",
           }
         : EMPTY,
     );
-    setLoading(false);
+    setPreviewLoading(false);
+    setSubmitting(false);
     setError("");
   }, [initial, open]);
 
@@ -37,44 +32,50 @@ export default function VideoFormModal({open, onClose, onSubmit, initial}) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setLoading(true);
+    setPreviewLoading(true);
     setError("");
 
     try {
       const asset = await prepareVideoAsset(file);
       setForm((current) => ({
         ...current,
-        video: {
-          ...asset,
-          fileName: file.name,
-        },
+        file,
+        poster: asset.poster || "",
+        fileName: file.name,
       }));
     } catch (caughtError) {
       setError("Could not read that video file. Please try another file.");
     } finally {
-      setLoading(false);
+      setPreviewLoading(false);
       event.target.value = "";
     }
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    if (!form.video && !(initial?.src || initial?.link)) {
+    if (!form.file && !initial) {
       setError("Upload a video file for this entry.");
       return;
     }
-    onSubmit({
-      title: form.title.trim(),
-      description: form.description,
-      category: form.category,
-      src: form.video?.src || initial?.src || initial?.link || "",
-      poster: form.video?.poster || initial?.poster || initial?.thumbnail || "",
-      fileName: form.video?.fileName || initial?.fileName || initial?.title,
-      type: form.video?.type || initial?.type || "",
-    });
-    onClose();
+
+    setSubmitting(true);
+    setError("");
+    try {
+      await onSubmit({
+        title: form.title.trim(),
+        description: form.description,
+        file: form.file,
+      });
+      onClose();
+    } catch (caughtError) {
+      setError(caughtError?.message || "Upload failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const busy = previewLoading || submitting;
 
   return (
     <AnimatePresence>
@@ -92,33 +93,25 @@ export default function VideoFormModal({open, onClose, onSubmit, initial}) {
             <label className="block text-xs text-mist-500 mb-1.5">Description</label>
             <textarea value={form.description} onChange={(e) => setForm((f) => ({...f, description: e.target.value}))} rows={3} className="w-full mb-4 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:border-violet-400 outline-none resize-none" />
 
-            <label className="block text-xs text-mist-500 mb-1.5">Category</label>
-            <select value={form.category} onChange={(e) => setForm((f) => ({...f, category: e.target.value}))} className="w-full mb-4 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:border-violet-400 outline-none text-mist-200">
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c} className="bg-ink-800">
-                  {c}
-                </option>
-              ))}
-            </select>
-
             <label className="block text-xs text-mist-500 mb-1.5">Video File</label>
             <input type="file" accept={VIDEO_ACCEPT} onChange={handleFile} className="w-full mb-3 text-sm text-mist-400 file:mr-4 file:rounded-full file:border-0 file:bg-white/5 file:px-4 file:py-2.5 file:text-mist-100 hover:file:bg-white/10" />
-            <p className="text-xs text-mist-500 mb-4">MP4, MOV, AVI, or WEBM. The first frame becomes the preview thumbnail.</p>
+            <p className="text-xs text-mist-500 mb-4">{initial ? "Leave empty to keep the existing video file." : "MP4 or WEBM."}</p>
 
-            {form.video?.poster ? (
+            {form.poster ? (
               <div className="mb-4 rounded-xl overflow-hidden border border-white/10 bg-black/30">
-                <img src={form.video.poster} alt="Video preview" className="w-full aspect-video object-cover" />
+                <img src={form.poster} alt="Video preview" className="w-full aspect-video object-cover" />
               </div>
-            ) : form.video ? (
+            ) : form.fileName ? (
               <div className="mb-4 rounded-xl overflow-hidden border border-white/10 bg-black/30 aspect-video flex items-center justify-center">
-                <p className="text-xs text-mist-500 text-center px-4">Thumbnail generate nahi ho payi — video format shayad ye browser support nahi karta. Video phir bhi save ho jayega.</p>
+                <p className="text-xs text-mist-500 text-center px-4">Preview not available for this format — the file will still upload fine.</p>
               </div>
             ) : null}
 
-            {loading && <p className="text-xs text-mist-500 mb-4">Processing video preview...</p>}
+            {previewLoading && <p className="text-xs text-mist-500 mb-4">Processing video preview...</p>}
+            {submitting && <p className="text-xs text-mist-500 mb-4">Uploading to server...</p>}
             {error && <p className="text-xs text-red-400 mb-4">{error}</p>}
 
-            <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-60">
+            <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-60">
               {initial ? "Save Changes" : "Add Video"}
             </button>
           </motion.form>

@@ -9,7 +9,6 @@ import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Home from './pages/Home.jsx'
-import AlbumDetail from './pages/AlbumDetail.jsx'
 import Login from './pages/Login.jsx'
 import Admin from './pages/Admin.jsx'
 import NotFound from './pages/NotFound.jsx'
@@ -39,7 +38,6 @@ export default function App() {
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<Home />} />
-              <Route path="/album/:id" element={<AlbumDetail />} />
               <Route path="/login" element={<Login />} />
               <Route
                 path="/admin"
