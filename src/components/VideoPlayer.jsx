@@ -1,54 +1,49 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import {
-  FiAward, FiMessageCircle, FiDollarSign, FiCompass,
-  FiRefreshCw, FiTrendingUp, FiCheckCircle, FiClock, FiSmile,
-} from 'react-icons/fi'
-import Reveal from './Reveal.jsx'
+import React, {useState, useEffect} from "react";
 
-const REASONS = [
-  { icon: FiAward, title: 'High Quality Editing', desc: 'Every frame gets meticulous attention before it ships.' },
-  { icon: FiMessageCircle, title: 'Fast Communication', desc: 'Clear, responsive updates from brief to delivery.' },
-  { icon: FiDollarSign, title: 'Affordable Pricing', desc: 'Premium output at rates that respect your budget.' },
-  { icon: FiCompass, title: 'Creative Ideas', desc: 'Fresh concepts, not just cutting on the beat.' },
-  { icon: FiRefreshCw, title: 'Unlimited Creativity', desc: 'No two edits look the same — always tailored to you.' },
-  { icon: FiTrendingUp, title: 'Modern Editing Style', desc: 'Trend-aware pacing that performs on today\'s platforms.' },
-  { icon: FiCheckCircle, title: 'Professional Workflow', desc: 'Organized handoffs, versioning and file management.' },
-  { icon: FiClock, title: 'On-Time Delivery', desc: 'Deadlines are commitments, not suggestions.' },
-  { icon: FiSmile, title: 'Client Satisfaction', desc: 'Revisions and feedback loops until it feels right.' },
-]
+// Sirf known embed-hosts (YouTube, Vimeo, etc.) ke liye iframe use karo.
+// Baaki har cheez (apna backend, blob, data URL, ya bina-extension wali
+// file link) ek native <video> tag mein chalayenge — ye sabse zyada
+// reliable hai kyunki hume server ka Content-Type pata nahi hota.
+function isEmbedUrl(url) {
+  return /(youtube\.com|youtu\.be|vimeo\.com|player\.vimeo)/i.test(url || "");
+}
 
-export default function WhyChooseMe() {
-  return (
-    <section id="why" className="relative section-pad">
-      <Reveal className="max-w-2xl mb-16">
-        <p className="eyebrow mb-4">00:08:05 — Why Me</p>
-        <h2 className="text-3xl sm:text-4xl font-extrabold">
-          Why clients <span className="grad-text">choose Rehann</span>
-        </h2>
-      </Reveal>
+export default function VideoPlayer({src, poster, title}) {
+  const [failed, setFailed] = useState(false);
+  const url = src || "";
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-        {REASONS.map((r, i) => (
-          <motion.div
-            key={r.title}
-            initial={{ opacity: 0, scale: 0.94 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.45, delay: (i % 3) * 0.07 }}
-            whileHover={{ y: -6, borderColor: 'rgba(139,92,246,0.4)' }}
-            className="card p-6 flex items-start gap-4"
-          >
-            <span className="w-10 h-10 rounded-lg bg-white/5 text-cyan-400 flex items-center justify-center shrink-0">
-              <r.icon size={17} />
-            </span>
-            <div>
-              <h3 className="font-display text-base mb-1">{r.title}</h3>
-              <p className="text-sm text-mist-500 leading-relaxed">{r.desc}</p>
-            </div>
-          </motion.div>
-        ))}
+  useEffect(() => {
+    setFailed(false);
+  }, [url]);
+
+  if (!url) {
+    return (
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
+        <p className="text-sm text-mist-400 px-6 text-center">Is video ke liye koi source link nahi mila.</p>
       </div>
-    </section>
-  )
+    );
+  }
+
+  if (isEmbedUrl(url)) {
+    return (
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+        <iframe src={url} title={title} className="w-full h-full" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 flex flex-col items-center justify-center gap-2 p-6 text-center">
+        <p className="text-sm text-mist-300">Ye video load nahi ho paya.</p>
+        <p className="text-xs text-mist-500 break-all">Link check karein ya backend/hosting reachable hai ya nahi confirm karein.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+      <video key={url} src={url} poster={poster || undefined} className="w-full h-full object-contain" controls playsInline preload="metadata" onError={() => setFailed(true)} />
+    </div>
+  );
 }
