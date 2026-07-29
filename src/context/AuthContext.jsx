@@ -1,74 +1,74 @@
-import React, {createContext, useContext, useState, useEffect, useCallback} from "react";
-import {getAllVideos, addVideoApi, editVideoApi, deleteVideoApi} from "../apis/videos.js";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-const VideoContext = createContext(null);
+const AuthContext = createContext(null)
+const STORAGE_KEY = 'rehann_portfolio_admin_session_v1'
 
-function normalize(v) {
-  return {
-    id: v.id,
-    title: v.title || "",
-    description: v.description || "",
-    src: v.videoUrl,
-    date: (v.createdAt || "").slice(0, 10),
-  };
+const ADMIN_ACCOUNT = {
+  username: 'admin',
+  password: 'admin1234',
 }
 
-export function VideoProvider({children}) {
-  const [videos, setVideos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch (error) {
+    console.warn('Failed to read admin session', error)
+    return null
+  }
+}
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getAllVideos();
-      setVideos(data.map(normalize));
-    } catch (e) {
-      setError(e.message || "Failed to load videos");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(loadSession)
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const addVideo = useCallback(
-    async ({title, description, file}) => {
-      const created = await addVideoApi({title, description, file});
-      if (created) {
-        setVideos((prev) => [normalize(created), ...prev]);
+    try {
+      if (session) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
       } else {
-        await refresh();
+        localStorage.removeItem(STORAGE_KEY)
       }
-    },
-    [refresh],
-  );
+    } catch (error) {
+      console.warn('Failed to persist admin session', error)
+    }
+  }, [session])
 
-  const updateVideo = useCallback(
-    async (id, {title, description, file}) => {
-      const updated = await editVideoApi(id, {title, description, file});
-      if (updated) {
-        setVideos((prev) => prev.map((v) => (v.id === id ? normalize(updated) : v)));
-      } else {
-        await refresh();
+  const login = useCallback(({ username, password }) => {
+    if (
+      username.trim().toLowerCase() === ADMIN_ACCOUNT.username &&
+      password === ADMIN_ACCOUNT.password
+    ) {
+      const nextSession = {
+        username: ADMIN_ACCOUNT.username,
+        loggedInAt: new Date().toISOString(),
       }
-    },
-    [refresh],
-  );
+      setSession(nextSession)
+      return { ok: true }
+    }
 
-  const removeVideo = useCallback(async (id) => {
-    await deleteVideoApi(id);
-    setVideos((prev) => prev.filter((v) => v.id !== id));
-  }, []);
+    return { ok: false, message: 'Invalid admin credentials.' }
+  }, [])
 
-  return <VideoContext.Provider value={{videos, loading, error, refresh, addVideo, updateVideo, removeVideo}}>{children}</VideoContext.Provider>;
+  const logout = useCallback(() => {
+    setSession(null)
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      session,
+      isAuthenticated: Boolean(session),
+      login,
+      logout,
+    }),
+    [login, logout, session]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useVideos() {
-  const ctx = useContext(VideoContext);
-  if (!ctx) throw new Error("useVideos must be used within VideoProvider");
-  return ctx;
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
 }
