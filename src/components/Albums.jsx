@@ -134,7 +134,14 @@ export default function Albums() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         initial={editing}
-        onSubmit={(data) => (editing ? updateVideo(editing.id, data) : addVideo(data))}
+        onSubmit={async (data) => {
+          if (editing) {
+            await updateVideo(editing.id, data);
+          } else {
+            await addVideo(data);
+            window.location.reload(); // video upload hote hi page reload
+          }
+        }}
       />
 
       <ConfirmDialog
