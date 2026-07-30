@@ -29,9 +29,10 @@ export async function addVideoApi({title, description, file}) {
   const formData = new FormData();
   formData.append("title", title);
   formData.append("description", description || "");
-  // 👈 field name assumption — if uploads 400/fail, check your multer/multipart
-  // field name on the backend for POST /add-video and rename "video" to match.
-  formData.append("video", file);
+  // Backend multer route: upload.single('videoFile') — field name yahi hona chahiye.
+  formData.append("videoFile", file);
+  // "video: (binary)" ki jagah ab "videoFile: (binary)" dikhega Network tab mein —
+  // yeh normal hai, real file upload isi tarah hota hai.
 
   const res = await fetch(`${BASE_URL}/add-video`, {
     method: "POST",
@@ -41,13 +42,16 @@ export async function addVideoApi({title, description, file}) {
   return body?.data;
 }
 
-export async function editVideoApi(id, {title, description, file}) {
+export async function editVideoApi({id, title, description, file}) {
   const formData = new FormData();
+  if (id !== null && id !== undefined) formData.append("id", id);
   if (title !== undefined) formData.append("title", title);
   if (description !== undefined) formData.append("description", description || "");
-  if (file) formData.append("video", file); // same field-name assumption as above
+  if (file) {
+    formData.append("videoFile", file); // matches backend upload.single('videoFile')
+  }
 
-  const res = await fetch(`${BASE_URL}/edit-video/${id}`, {
+  const res = await fetch(`${BASE_URL}/edit-video`, {
     method: "PUT",
     body: formData,
   });
@@ -56,7 +60,9 @@ export async function editVideoApi(id, {title, description, file}) {
 }
 
 export async function deleteVideoApi(id) {
-  const res = await fetch(`${BASE_URL}/delete-video/${id}`, {
+  const formData = new FormData();
+
+  const res = await fetch(`${BASE_URL}/delete-video?id=${id}`, {
     method: "DELETE",
   });
   return handleResponse(res);

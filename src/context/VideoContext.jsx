@@ -49,7 +49,7 @@ export function VideoProvider({children}) {
 
   const updateVideo = useCallback(
     async (id, {title, description, file}) => {
-      const updated = await editVideoApi(id, {title, description, file});
+      const updated = await editVideoApi({id, title, description, file});
       if (updated) {
         setVideos((prev) => prev.map((v) => (v.id === id ? normalize(updated) : v)));
       } else {
