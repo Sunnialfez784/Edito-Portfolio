@@ -21,7 +21,7 @@ const STATS = [
   { value: 250, suffix: '+', label: 'Projects Completed' },
   { value: 100, suffix: '%', label: 'Client Satisfaction' },
   { value: 24, suffix: 'h', label: 'Fast Delivery' },
-  { value: 5, suffix: '+', label: 'Years Learning & Editing' },
+  { value: 3, suffix: '+', label: 'Years Learning & Editing' },
 ]
 
 function Counter({ value, suffix }) {

@@ -70,7 +70,7 @@ export default function Footer() {
               <FiPhone size={13} className="text-cyan-400" /> +91 7046340306
             </li>
             <li className="flex items-center gap-2">
-              <FiMail size={13} className="text-cyan-400" /> rehann11@gmail.com
+              <FiMail size={13} className="text-cyan-400" /> rehanraja4726@gmail.com
             </li>
           </ul>
         </div>

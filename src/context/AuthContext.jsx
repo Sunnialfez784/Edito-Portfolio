@@ -5,7 +5,7 @@ const STORAGE_KEY = 'rehann_portfolio_admin_session_v1'
 
 const ADMIN_ACCOUNT = {
   username: 'admin',
-  password: 'admin1234',
+  password: 'Raja@11',
 }
 
 function loadSession() {

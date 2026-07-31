@@ -70,7 +70,7 @@ export default function Login() {
                   value={form.password}
                   onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
                   className="w-full bg-white/5 border border-white/10 rounded-full pl-11 pr-4 py-3 text-sm focus:border-violet-400 outline-none"
-                  placeholder="admin1234"
+                  placeholder="Enter Password"
                   autoComplete="current-password"
                 />
               </div>
