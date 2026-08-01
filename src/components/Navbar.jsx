@@ -105,7 +105,7 @@ export default function Navbar() {
           Let's Work Together
         </button>
 
-        <button
+        {/* <button
           type="button"
           className="md:hidden text-mist-100 relative z-[70]"
           onClick={toggleMenu}
@@ -113,7 +113,7 @@ export default function Navbar() {
           aria-expanded={open}
         >
           {open ? <FiX size={26} /> : <FiMenu size={26} />}
-        </button>
+        </button> */}
       </div>
 
       <AnimatePresence>
