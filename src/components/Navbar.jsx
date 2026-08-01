@@ -11,6 +11,23 @@ const LINKS = [
   { label: 'Contact', href: '#contact' },
 ]
 
+function scrollToHash(hash) {
+  if (!hash) return
+  // Try a few times in case the target section hasn't rendered yet
+  // (e.g. right after navigating from another route).
+  let attempts = 0
+  const tryScroll = () => {
+    const el = document.querySelector(hash)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    } else if (attempts < 10) {
+      attempts += 1
+      setTimeout(tryScroll, 100)
+    }
+  }
+  tryScroll()
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -23,14 +40,26 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Whenever the route/hash changes (including on first load, e.g. someone
+  // opens yoursite.com/#albums directly), scroll to the matching section.
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash) {
+      scrollToHash(location.hash)
+    }
+  }, [location.pathname, location.hash])
+
   const go = (href) => {
     setOpen(false)
     if (location.pathname !== '/') {
+      // Navigate home first; the effect above will pick up the hash
+      // once we land on '/' and scroll to it.
       navigate('/' + href)
     } else {
-      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
+      scrollToHash(href)
     }
   }
+
+  const toggleMenu = () => setOpen((o) => !o)
 
   return (
     <header
@@ -44,6 +73,7 @@ export default function Navbar() {
         }`}
       >
         <button
+          type="button"
           onClick={() => go('#home')}
           data-cursor-hover
           className="font-display text-xl tracking-wide"
@@ -54,6 +84,7 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-9">
           {LINKS.map((l) => (
             <button
+              type="button"
               key={l.href}
               onClick={() => go(l.href)}
               data-cursor-hover
@@ -66,6 +97,7 @@ export default function Navbar() {
         </nav>
 
         <button
+          type="button"
           onClick={() => go('#contact')}
           data-cursor-hover
           className="hidden md:inline-flex btn-primary !py-2.5 !px-5 text-sm"
@@ -74,9 +106,11 @@ export default function Navbar() {
         </button>
 
         <button
-          className="md:hidden text-mist-100"
-          onClick={() => setOpen((o) => !o)}
+          type="button"
+          className="md:hidden text-mist-100 relative z-[70]"
+          onClick={toggleMenu}
           aria-label="Toggle menu"
+          aria-expanded={open}
         >
           {open ? <FiX size={26} /> : <FiMenu size={26} />}
         </button>
@@ -93,6 +127,7 @@ export default function Navbar() {
             <div className="flex flex-col p-4 gap-1">
               {LINKS.map((l) => (
                 <button
+                  type="button"
                   key={l.href}
                   onClick={() => go(l.href)}
                   className="text-left py-3 px-3 rounded-lg text-mist-300 hover:text-white hover:bg-white/5 transition-colors"
@@ -100,7 +135,7 @@ export default function Navbar() {
                   {l.label}
                 </button>
               ))}
-              <button onClick={() => go('#contact')} className="btn-primary mt-2 w-full">
+              <button type="button" onClick={() => go('#contact')} className="btn-primary mt-2 w-full">
                 Let's Work Together
               </button>
             </div>

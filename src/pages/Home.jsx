@@ -13,8 +13,8 @@ export default function Home() {
     <motion.main initial={{opacity: 0}} animate={{opacity: 1}} exit={{opacity: 0}} transition={{duration: 0.4}}>
       <Hero />
       <About />
-      <Services />
       <Albums />
+      <Services />
       <Skills />
       <FAQ />
       <Contact />

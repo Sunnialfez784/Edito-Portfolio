@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { FiPlay, FiFilm, FiScissors, FiSliders } from 'react-icons/fi'
 import BackgroundFX from './BackgroundFX.jsx'
+import raja from '../assets/IMG-20260731-WA0011.jpg'
 
 const ROLES = ['Video Editor', 'Reels Specialist', 'Colorist', 'Motion Designer', 'Story Teller']
 
@@ -108,7 +109,7 @@ export default function Hero() {
             </div>
             <div className="hidden sm:block w-px h-8 bg-white/10" />
             <div>
-              <div className="text-mist-100 font-display text-xl">5+</div>
+              <div className="text-mist-100 font-display text-xl">3+</div>
               Years
             </div>
             <div className="hidden sm:block w-px h-8 bg-white/10" />
@@ -128,7 +129,7 @@ export default function Hero() {
           <div className="relative w-full max-w-md aspect-square">
             <div className="absolute inset-6 rounded-[2rem] glass shadow-glow overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=900&auto=format&fit=crop"
+                src={raja}
                 alt="Cinematic editing workspace"
                 className="w-full h-full object-cover opacity-70"
                 loading="lazy"
